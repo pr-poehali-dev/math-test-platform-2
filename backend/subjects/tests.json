@@ -1,0 +1,14 @@
+{
+  "tests": [
+    {
+      "name": "Get all subjects",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "subjects": "array"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "tests": [
+    {
+      "name": "Test user login",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "login": "никитовский"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "user": {
+          "login": "string",
+          "name": "string",
+          "role": "string"
+        }
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

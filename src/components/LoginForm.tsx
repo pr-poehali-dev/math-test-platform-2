@@ -26,9 +26,9 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
           <div className="mx-auto w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mb-4">
             <Icon name="GraduationCap" size={32} className="text-primary" />
           </div>
-          <CardTitle className="text-3xl font-heading">Математика Онлайн</CardTitle>
+          <CardTitle className="text-3xl font-heading">Онлайн школа Никитовского</CardTitle>
           <CardDescription className="text-base">
-            Платформа для тестирования по математике
+            Образовательная платформа для учеников 1-6 классов
           </CardDescription>
         </CardHeader>
         <CardContent>

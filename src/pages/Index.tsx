@@ -1,29 +1,13 @@
-import { useState, useEffect } from 'react';
-import LoginForm from '@/components/LoginForm';
-import TestSelection from '@/components/TestSelection';
-import TestInterface from '@/components/TestInterface';
-import TeacherDashboard from '@/components/TeacherDashboard';
-import { User, StudentSubmission } from '@/types/test';
-
-type View = 'login' | 'testSelection' | 'testInterface' | 'teacherDashboard';
+import { useAuth } from '@/hooks/useAuth';
+import { useSubmissions } from '@/hooks/useSubmissions';
+import { useNavigation } from '@/hooks/useNavigation';
+import AppRouter from '@/components/AppRouter';
+import { StudentSubmission } from '@/types/test';
 
 export default function Index() {
-  const [view, setView] = useState<View>('login');
-  const [user, setUser] = useState<User | null>(null);
-  const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
-  const [submissions, setSubmissions] = useState<StudentSubmission[]>([]);
-
-  useEffect(() => {
-    const savedSubmissions = localStorage.getItem('testSubmissions');
-    if (savedSubmissions) {
-      setSubmissions(JSON.parse(savedSubmissions));
-    }
-  }, []);
-
-  const saveSubmissions = (newSubmissions: StudentSubmission[]) => {
-    setSubmissions(newSubmissions);
-    localStorage.setItem('testSubmissions', JSON.stringify(newSubmissions));
-  };
+  const { user, login, logout } = useAuth();
+  const { submissions, addSubmission, gradeSubmission, allowRetake } = useSubmissions();
+  const { view, selectedTestId, navigateToLogin, navigateToTestSelection, navigateToTest, navigateToTeacherDashboard } = useNavigation();
 
   const handleLogin = (name: string, role: 'student' | 'teacher') => {
     if (role === 'teacher' && name.toLowerCase() !== 'никитовский') {
@@ -31,8 +15,8 @@ export default function Index() {
       return;
     }
 
-    setUser({ name, role });
-    setView(role === 'teacher' ? 'teacherDashboard' : 'testSelection');
+    login({ name, role });
+    role === 'teacher' ? navigateToTeacherDashboard() : navigateToTestSelection();
   };
 
   const handleSelectTest = (testId: string) => {
@@ -47,103 +31,39 @@ export default function Index() {
       return;
     }
 
-    setSelectedTestId(testId);
-    setView('testInterface');
+    navigateToTest(testId);
   };
 
   const handleSubmitTest = (submission: StudentSubmission) => {
-    const existingIndex = submissions.findIndex(
-      s => s.studentName === submission.studentName && s.variantId === submission.variantId
-    );
-
-    let newSubmissions: StudentSubmission[];
-    if (existingIndex >= 0) {
-      newSubmissions = [...submissions];
-      newSubmissions[existingIndex] = submission;
-    } else {
-      newSubmissions = [...submissions, submission];
-    }
-
-    saveSubmissions(newSubmissions);
+    addSubmission(submission);
     
     setTimeout(() => {
-      setView('testSelection');
-      setSelectedTestId(null);
+      navigateToTestSelection();
     }, 2000);
   };
 
   const handleGradeSubmission = (studentName: string, variantId: string, score: number) => {
-    const newSubmissions = submissions.map(s => {
-      if (s.studentName === studentName && s.variantId === variantId) {
-        return {
-          ...s,
-          score,
-          checkedBy: user?.name || 'никитовский'
-        };
-      }
-      return s;
-    });
-    saveSubmissions(newSubmissions);
-  };
-
-  const handleAllowRetake = (studentName: string, variantId: string) => {
-    const newSubmissions = submissions.map(s => {
-      if (s.studentName === studentName && s.variantId === variantId) {
-        return {
-          ...s,
-          canRetake: true,
-          isLocked: false
-        };
-      }
-      return s;
-    });
-    saveSubmissions(newSubmissions);
+    gradeSubmission(studentName, variantId, score, user?.name || 'никитовский');
   };
 
   const handleLogout = () => {
-    setUser(null);
-    setView('login');
-    setSelectedTestId(null);
+    logout();
+    navigateToLogin();
   };
 
-  if (view === 'login') {
-    return <LoginForm onLogin={handleLogin} />;
-  }
-
-  if (view === 'testSelection' && user) {
-    return (
-      <TestSelection
-        onSelectTest={handleSelectTest}
-        onLogout={handleLogout}
-        userName={user.name}
-      />
-    );
-  }
-
-  if (view === 'testInterface' && user && selectedTestId) {
-    return (
-      <TestInterface
-        testId={selectedTestId}
-        studentName={user.name}
-        onSubmit={handleSubmitTest}
-        onBack={() => {
-          setView('testSelection');
-          setSelectedTestId(null);
-        }}
-      />
-    );
-  }
-
-  if (view === 'teacherDashboard' && user?.role === 'teacher') {
-    return (
-      <TeacherDashboard
-        submissions={submissions}
-        onGradeSubmission={handleGradeSubmission}
-        onAllowRetake={handleAllowRetake}
-        onLogout={handleLogout}
-      />
-    );
-  }
-
-  return <LoginForm onLogin={handleLogin} />;
+  return (
+    <AppRouter
+      view={view}
+      user={user}
+      selectedTestId={selectedTestId}
+      submissions={submissions}
+      onLogin={handleLogin}
+      onSelectTest={handleSelectTest}
+      onSubmitTest={handleSubmitTest}
+      onGradeSubmission={handleGradeSubmission}
+      onAllowRetake={allowRetake}
+      onLogout={handleLogout}
+      onBackFromTest={navigateToTestSelection}
+    />
+  );
 }
